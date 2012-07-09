@@ -57,6 +57,7 @@ static gboolean ternary_plot_expose (GtkWidget* plot, GdkEventExpose *event);
 static gboolean ternary_plot_button_press (GtkWidget *plot, GdkEventButton *event);
 static gboolean ternary_plot_button_release (GtkWidget *plot, GdkEventButton *event);
 static gboolean ternary_plot_motion_notify (GtkWidget *plot, GdkEventMotion *event);
+static void     ternary_plot_size_allocate (GtkWidget *widget, GdkRectangle *allocation);
 
 static void ternary_plot_finalize (GObject *object);
 
@@ -89,6 +90,7 @@ static void ternary_plot_class_init (TernaryPlotClass *class)
     widget_class->button_press_event = ternary_plot_button_press;
     widget_class->button_release_event = ternary_plot_button_release;
     widget_class->motion_notify_event = ternary_plot_motion_notify;
+    widget_class->size_allocate = ternary_plot_size_allocate;
 
     g_type_class_add_private (obj_class, sizeof (TernaryPlotPrivate));
 }
@@ -238,6 +240,31 @@ static void draw (GtkWidget *plot, cairo_t *cr)
     cairo_stroke (cr);
 }
 
+static void ternary_plot_size_allocate (GtkWidget *plot,
+    GdkRectangle *allocation)
+{
+    TernaryPlotPrivate *priv;
+
+    priv = TERNARY_PLOT_GET_PRIVATE (plot);
+
+    /* radius and center */
+    priv->radius = (MIN (allocation->width,
+                         (allocation->height - 15) / sin (M_PI / 3)) - 5)*
+                         sin (M_PI/3) * 2 / 3;
+    priv->xc = allocation->x + allocation->width / 2;
+    priv->yc = allocation->y + (allocation->height - 15) * 2 / 3;
+
+    /* vertices */
+    priv->x1 = priv->xc + priv->radius * 0; /* cos (-M_PI/2) */
+    priv->y1 = priv->yc + priv->radius * -1; /* sin (-M_PI/2) */
+    priv->x2 = priv->xc + priv->radius * sqrt (3)/2; /* cos (-11*M_PI/6) */
+    priv->y2 = priv->yc + priv->radius * 0.5; /* sin (-11*M_PI/6) */
+    priv->x3 = priv->xc + priv->radius * -sqrt (3)/2; /* cos (-7*M_PI/6) */
+    priv->y3 = priv->yc + priv->radius * 0.5; /* sin (-7*M_PI/6) */
+
+    GTK_WIDGET_CLASS (ternary_plot_parent_class)->size_allocate (plot, allocation);
+}
+
 static gboolean ternary_plot_expose (GtkWidget* plot, GdkEventExpose *event)
 {
     cairo_t *cr;
@@ -245,21 +272,6 @@ static gboolean ternary_plot_expose (GtkWidget* plot, GdkEventExpose *event)
 
     /* update private data */
     priv = TERNARY_PLOT_GET_PRIVATE (plot);
-
-    /* radius and center */
-    priv->radius = (MIN (plot->allocation.width,
-        (plot->allocation.height - 15) / sin (M_PI / 3)) - 5)*
-        sin (M_PI/3)/3*2;
-    priv->xc = plot->allocation.x + plot->allocation.width/2;
-    priv->yc = plot->allocation.y + (plot->allocation.height - 15)/3*2;
-
-    /* vetices */
-    priv->x1 = priv->xc + priv->radius*0; /* cos (-M_PI/2) */
-    priv->y1 = priv->yc + priv->radius*-1; /* sin (-M_PI/2) */
-    priv->x2 = priv->xc + priv->radius*sqrt (3)/2; /* cos (-11*M_PI/6) */
-    priv->y2 = priv->yc + priv->radius*0.5; /* sin (-11*M_PI/6) */
-    priv->x3 = priv->xc + priv->radius*-sqrt (3)/2; /* cos (-7*M_PI/6) */
-    priv->y3 = priv->yc + priv->radius*0.5; /* sin (-7*M_PI/6) */
 
     /* get a cairo_t */
     cr = gdk_cairo_create (plot->window);
