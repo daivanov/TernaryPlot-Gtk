@@ -37,6 +37,7 @@ struct _TernaryPlotPrivate
     gdouble x, y, z; /* x-,y-,z-values */
     gchar *xlabel, *ylabel, *zlabel; /* x-,y-,z-labels */
     gdouble tol; /* rounding tolerance in percents */
+    gdouble grid_step; /* grid step */
     gchar is_dragged; /* is pointer being dragged */
 };
 
@@ -101,6 +102,7 @@ static void ternary_plot_init (TernaryPlot *plot)
     priv->z = 1./3;
 
     priv->tol = 0.1; /* 10% */
+    priv->grid_step = 0.1; /* 10% */
 
     priv->is_dragged = FALSE;
 
@@ -128,7 +130,6 @@ static void ternary_plot_finalize (GObject *object)
 static void draw (GtkWidget *plot, cairo_t *cr)
 {
     gdouble frac;
-    gint i;
     gchar label[100];
     cairo_text_extents_t extents;
     TernaryPlotPrivate *priv;
@@ -139,7 +140,7 @@ static void draw (GtkWidget *plot, cairo_t *cr)
     cairo_move_to (cr, priv->x1, priv->y1);
     cairo_line_to (cr, priv->x2, priv->y2);
     cairo_line_to (cr, priv->x3, priv->y3);
-    cairo_close_path(cr);
+    cairo_close_path (cr);
     cairo_set_source_rgb (cr, 1, 1, 1);
     cairo_fill_preserve (cr);
     cairo_set_source_rgb (cr, 0, 0, 0);
@@ -158,9 +159,8 @@ static void draw (GtkWidget *plot, cairo_t *cr)
     cairo_close_path(cr);
     cairo_stroke (cr);
 
-    for (i = 1; i < 5; i++)
+    for (frac = priv->grid_step; frac < 0.5; frac += priv->grid_step)
     {
-        frac = i/10.0;
         cairo_move_to (cr, frac*priv->x1 + (1-frac)*priv->x2, frac*priv->y1 + (1-frac)*priv->y2);
         cairo_line_to (cr, (1-frac)*priv->x2 + frac*priv->x3, (1-frac)*priv->y2 + frac*priv->y3);
         cairo_line_to (cr, frac*priv->x3 + (1-frac)*priv->x1, frac*priv->y3 + (1-frac)*priv->y1);
