@@ -335,8 +335,8 @@ static gboolean ternary_plot_motion_notify (GtkWidget *plot, GdkEventMotion *eve
 static gboolean ternary_plot_button_release (GtkWidget *plot, GdkEventButton *event)
 {
     TernaryPlotPrivate *priv;
-    gdouble dx, dy, dz;
-    gdouble px, py, pz;
+    gdouble round_err;
+    gdouble new_x, new_y, new_z;
     gdouble tol;
 
     priv = TERNARY_PLOT_GET_PRIVATE (plot);
@@ -346,35 +346,30 @@ static gboolean ternary_plot_button_release (GtkWidget *plot, GdkEventButton *ev
 
     tol = priv->tol;
 
-    dx = fmod (priv->x, tol);
-    dy = fmod (priv->y, tol);
-    dz = fmod (priv->z, tol);
+    new_x = roundf (priv->x / tol) * tol;
+    new_y = roundf (priv->y / tol) * tol;
+    new_z = roundf (priv->z / tol) * tol;
 
-    if (dx + dy + dz > 1.5 * tol)
+    round_err = 1.0 - (new_x + new_y + new_z);
+    if (fabs (round_err) > tol / 2)
     {
-        dx = dx - tol;
-        dy = dy - tol;
-        dz = dz - tol;
+        gdouble dx, dy, dz;
+        dx = (priv->x - new_x) / round_err;
+        dy = (priv->y - new_y) / round_err;
+        dz = (priv->z - new_z) / round_err;
+
+        if (dx > dy && dx > dz)
+            new_x += round_err;
+        else if (dy > dz)
+            new_y += round_err;
+        else
+            new_z += round_err;
+
     }
 
-    px = (fabs(dx)-tol)*(fabs(dx)-tol) + dy*dy + dz*dz;
-    py = dx*dx + (fabs(dy)-tol)*(fabs(dy)-tol) + dz*dz;
-    pz = dx*dx + dy*dy + (fabs(dz)-tol)*(fabs(dz)-tol);
-
-    priv->x = priv->x - dx;
-    priv->y = priv->y - dy;
-    priv->z = priv->z - dz;
-
-    if (px < py && px < pz)
-        priv->x = priv->x + dx+dy+dz;
-    else if (py < pz)
-        priv->y = priv->y + dx+dy+dz;
-    else
-        priv->z = priv->z + dx+dy+dz;
-
-    dx = priv->x;
-    dy = priv->y;
-    dz = priv->z;
+    priv->x = new_x;
+    priv->y = new_y;
+    priv->z = new_z;
 
     gtk_widget_queue_draw (plot);
 
