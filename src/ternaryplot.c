@@ -134,6 +134,7 @@ static void ternary_plot_finalize (GObject *object)
 static void draw (GtkWidget *plot, cairo_t *cr)
 {
     gdouble frac;
+    gdouble px, py;
     gchar label[100];
     cairo_text_extents_t extents;
     TernaryPlotPrivate *priv;
@@ -205,34 +206,25 @@ static void draw (GtkWidget *plot, cairo_t *cr)
     cairo_rotate (cr, -M_PI/3);
 
     /* altitudes */
+    px = priv->x * priv->x1 + priv->y * priv->x2 + priv->z * priv->x3;
+    py = priv->x * priv->y1 + priv->y * priv->y2 + priv->z * priv->y3;
     cairo_set_source_rgb (cr, 0, 0, 0);
     cairo_move_to (cr,
-        priv->x*priv->x1 + priv->y*priv->x2 + priv->z*priv->x3,
-        priv->x*priv->y1 + priv->y*priv->y2 + priv->z*priv->y3);
-    cairo_line_to (cr,
-        (priv->y+priv->x/2)*priv->x2 + (priv->z+priv->x/2)*priv->x3,
-        (priv->y+priv->x/2)*priv->y2 + (priv->z+priv->x/2)*priv->y3);
+        px + priv->x * ((priv->x2 + priv->x3) / 2 - priv->x1),
+        py + priv->x * ((priv->y2 + priv->y3) / 2 - priv->y1));
+    cairo_line_to (cr, px, py);
+    cairo_rel_line_to (cr,
+        priv->y * ((priv->x1 + priv->x3) / 2 - priv->x2),
+        priv->y * ((priv->y1 + priv->y3) / 2 - priv->y2));
     cairo_stroke (cr);
-    cairo_move_to (cr,
-        priv->x*priv->x1 + priv->y*priv->x2 + priv->z*priv->x3,
-        priv->x*priv->y1 + priv->y*priv->y2 + priv->z*priv->y3);
-    cairo_line_to (cr,
-        (priv->x+priv->y/2)*priv->x1 + (priv->z+priv->y/2)*priv->x3,
-        (priv->x+priv->y/2)*priv->y1 + (priv->z+priv->y/2)*priv->y3);
-    cairo_stroke (cr);
-    cairo_move_to (cr,
-        priv->x*priv->x1 + priv->y*priv->x2 + priv->z*priv->x3,
-        priv->x*priv->y1 + priv->y*priv->y2 + priv->z*priv->y3);
-    cairo_line_to (cr,
-        (priv->x+priv->z/2)*priv->x1 + (priv->y+priv->z/2)*priv->x2,
-        (priv->x+priv->z/2)*priv->y1 + (priv->y+priv->z/2)*priv->y2);
+    cairo_move_to (cr, px, py);
+    cairo_rel_line_to (cr,
+        priv->z * ((priv->x1 + priv->x2) / 2 - priv->x3),
+        priv->z * ((priv->y1 + priv->y2) / 2 - priv->y3));
     cairo_stroke (cr);
 
     /* pointer */
-    cairo_arc (cr,
-        priv->x*priv->x1 + priv->y*priv->x2 + priv->z*priv->x3,
-        priv->x*priv->y1 + priv->y*priv->y2 + priv->z*priv->y3,
-        5, 0, 2 * M_PI);
+    cairo_arc (cr, px, py, 5, 0, 2 * M_PI);
     cairo_close_path(cr);
     cairo_set_source_rgb (cr, 0.8, 0.8, 0.8);
     cairo_fill_preserve (cr);
@@ -250,7 +242,7 @@ static void ternary_plot_size_allocate (GtkWidget *plot,
     /* radius and center */
     priv->radius = (MIN (allocation->width,
                          (allocation->height - 15) / sin (M_PI / 3)) - 5)*
-                         sin (M_PI/3) * 2 / 3;
+                         sin (M_PI / 3) * 2 / 3;
     priv->xc = allocation->x + allocation->width / 2;
     priv->yc = allocation->y + (allocation->height - 15) * 2 / 3;
 
