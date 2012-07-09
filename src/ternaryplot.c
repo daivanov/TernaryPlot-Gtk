@@ -298,7 +298,7 @@ static gboolean ternary_plot_button_press (GtkWidget *plot, GdkEventButton *even
 
 static gboolean ternary_plot_motion_notify (GtkWidget *plot, GdkEventMotion *event)
 {
-    gdouble x, y, z;
+    gdouble z;
     TernaryPlotPrivate *priv;
 
     priv = TERNARY_PLOT_GET_PRIVATE (plot);
@@ -307,20 +307,27 @@ static gboolean ternary_plot_motion_notify (GtkWidget *plot, GdkEventMotion *eve
         return FALSE;
 
     z = ternary_plot_dot_to_line_distance (event->x, event->y,
-        priv->x2, priv->y2, priv->x1, priv->y1)/(1.5*priv->radius);
-    x = ternary_plot_dot_to_line_distance (event->x, event->y,
-        priv->x3, priv->y3, priv->x2, priv->y2)/(1.5*priv->radius);
-    y = ternary_plot_dot_to_line_distance (event->x, event->y,
-        priv->x1, priv->y1, priv->x3, priv->y3)/(1.5*priv->radius);
-
-    if (x >= 0 && y >= 0 && z >= 0)
+        priv->x2, priv->y2, priv->x1, priv->y1) / (1.5 * priv->radius);
+    if (z >= 0)
     {
-        priv->x = x;
-        priv->y = y;
-        priv->z = z;
-    }
+        gdouble y;
+        y = ternary_plot_dot_to_line_distance (event->x, event->y,
+            priv->x1, priv->y1, priv->x3, priv->y3) / (1.5 * priv->radius);
+        if (y >= 0)
+        {
+            gdouble x;
+            x = ternary_plot_dot_to_line_distance (event->x, event->y,
+                priv->x3, priv->y3, priv->x2, priv->y2) / (1.5 * priv->radius);
+            if (x >= 0)
+            {
+                priv->x = x;
+                priv->y = y;
+                priv->z = z;
 
-    gtk_widget_queue_draw (plot);
+                gtk_widget_queue_draw (plot);
+            }
+        }
+    }
 
     return FALSE;
 }
