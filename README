@@ -1,0 +1,4 @@
+The most important requirements:
+You need GTK+ >= 2.8 in order to compile this application.
+Also you need appropriate development libraries.
+For example, gtk2-devel in Fedora or libgtk2.0-dev in Debian.
