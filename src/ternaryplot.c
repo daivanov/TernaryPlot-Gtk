@@ -24,6 +24,8 @@
 #include "ternaryplot.h"
 #include "ternaryplot-marshallers.h"
 
+#define SENSITIVITY_THRESH 5
+
 #define TERNARY_PLOT_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), \
                                        TERNARY_TYPE_PLOT, TernaryPlotPrivate))
 
@@ -286,11 +288,11 @@ static gboolean ternary_plot_button_press (GtkWidget *plot, GdkEventButton *even
     priv = TERNARY_PLOT_GET_PRIVATE (plot);
 
     /* distance from mouse coordinates to pointer */
-    dx = priv->x*priv->x1 + priv->y*priv->x2 + priv->z*priv->x3 - event->x;
-    dy = priv->x*priv->y1 + priv->y*priv->y2 + priv->z*priv->y3 - event->y;
+    dx = priv->x * priv->x1 + priv->y * priv->x2 + priv->z * priv->x3 - event->x;
+    dy = priv->x * priv->y1 + priv->y * priv->y2 + priv->z * priv->y3 - event->y;
 
-    /* if closer than 5 pixels, start dragging */
-    if (sqrt (dx*dx + dy*dy) < 5)
+    /* if closer than SENSITIVITY_THRESH pixels, start dragging */
+    if (dx * dx + dy * dy < SENSITIVITY_THRESH * SENSITIVITY_THRESH)
         priv->is_dragged = TRUE;
 
     return FALSE;
