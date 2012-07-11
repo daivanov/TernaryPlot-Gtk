@@ -174,10 +174,25 @@ static void draw_field (GtkWidget *plot, cairo_t *cr)
     cairo_restore (cr); /* stack-pen-size */
 }
 
+static void draw_label (cairo_t *cr, const char *label, double x, double y,
+    double angle)
+{
+    cairo_text_extents_t extents;
+
+    cairo_text_extents (cr, label, &extents);
+    cairo_move_to (cr, x, y);
+    cairo_rotate (cr, angle);
+    cairo_rel_move_to (cr, -extents.width/2,
+                       angle == 0.0 ?
+                       (extents.height + 2) :
+                       (-extents.height - extents.y_bearing - 2));
+    cairo_show_text (cr, label);
+    cairo_rotate (cr, -angle);
+}
+
 static void draw_labels (GtkWidget *plot, cairo_t *cr)
 {
     gchar label[100];
-    cairo_text_extents_t extents;
     TernaryPlotPrivate *priv;
 
     priv = TERNARY_PLOT_GET_PRIVATE (plot);
@@ -188,33 +203,18 @@ static void draw_labels (GtkWidget *plot, cairo_t *cr)
 
     g_snprintf (label, sizeof(label), "%s: %.1f%%",
         priv->xlabel != NULL ? priv->xlabel : "", 100 * priv->x);
-    cairo_text_extents (cr, label, &extents);
-    cairo_move_to (cr,
-                   (priv->x2 + priv->x3 - extents.width) / 2,
-                   (priv->y2 + priv->y3) / 2 - extents.y_bearing + 5);
-    cairo_show_text (cr, label);
+    draw_label (cr, label,
+                (priv->x2 + priv->x3) / 2, (priv->y2 + priv->y3) / 2, 0.0);
 
     g_snprintf (label, sizeof(label), "%s: %.1f%%",
         priv->ylabel != NULL ? priv->ylabel : "", 100 * priv->y);
-    cairo_text_extents (cr, label, &extents);
-    cairo_move_to (cr,
-                   (priv->x1 + priv->x3) / 2,
-                   (priv->y1 + priv->y3) / 2);
-    cairo_rotate (cr, -M_PI/3);
-    cairo_rel_move_to (cr, -extents.width/2, -(extents.height + extents.y_bearing) - 5);
-    cairo_show_text (cr, label);
-    cairo_rotate (cr, M_PI/3);
+    draw_label (cr, label,
+                (priv->x1 + priv->x3) / 2, (priv->y1 + priv->y3) / 2, -M_PI / 3);
 
     g_snprintf (label, sizeof(label), "%s: %.1f%%",
         priv->zlabel != NULL ? priv->zlabel : "", 100 * priv->z);
-    cairo_text_extents (cr, label, &extents);
-    cairo_move_to (cr,
-                   (priv->x1 + priv->x2) / 2,
-                   (priv->y1 + priv->y2) / 2);
-    cairo_rotate (cr, M_PI/3);
-    cairo_rel_move_to (cr, -extents.width/2, extents.height + extents.y_bearing - 5);
-    cairo_show_text (cr, label);
-    cairo_rotate (cr, -M_PI/3);
+    draw_label (cr, label,
+                (priv->x1 + priv->x2) / 2, (priv->y1 + priv->y2) / 2, M_PI / 3);
 }
 
 static void draw_pointer (GtkWidget *plot, cairo_t *cr)
