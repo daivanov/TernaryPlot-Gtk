@@ -34,7 +34,6 @@ typedef struct _TernaryPlotPrivate TernaryPlotPrivate;
 struct _TernaryPlotPrivate
 {
     gdouble x1, y1, x2, y2, x3, y3; /* vertices */
-    gdouble xc, yc; /* center */
     gdouble radius; /* radius */
     gdouble x, y, z; /* x-,y-,z-values */
     gchar *xlabel, *ylabel, *zlabel; /* x-,y-,z-labels */
@@ -131,12 +130,9 @@ static void ternary_plot_finalize (GObject *object)
     G_OBJECT_CLASS (ternary_plot_parent_class)->finalize (object);
 }
 
-static void draw (GtkWidget *plot, cairo_t *cr)
+static void draw_field (GtkWidget *plot, cairo_t *cr)
 {
     gdouble frac;
-    gdouble px, py;
-    gchar label[100];
-    cairo_text_extents_t extents;
     TernaryPlotPrivate *priv;
 
     priv = TERNARY_PLOT_GET_PRIVATE (plot);
@@ -176,34 +172,57 @@ static void draw (GtkWidget *plot, cairo_t *cr)
         cairo_stroke (cr);
     }
     cairo_restore (cr); /* stack-pen-size */
+}
+
+static void draw_labels (GtkWidget *plot, cairo_t *cr)
+{
+    gchar label[100];
+    cairo_text_extents_t extents;
+    TernaryPlotPrivate *priv;
+
+    priv = TERNARY_PLOT_GET_PRIVATE (plot);
 
     /* font settings */
     cairo_set_font_size (cr, 12);
     cairo_select_font_face (cr, "Nimbus Sans L", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
 
-    g_snprintf (label, sizeof(label), "%s: %.1f",
+    g_snprintf (label, sizeof(label), "%s: %.1f%%",
         priv->xlabel != NULL ? priv->xlabel : "", 100 * priv->x);
     cairo_text_extents (cr, label, &extents);
-    cairo_move_to (cr, priv->xc - extents.width/2, priv->yc + priv->radius/2 - extents.y_bearing + 5);
+    cairo_move_to (cr,
+                   (priv->x2 + priv->x3 - extents.width) / 2,
+                   (priv->y2 + priv->y3) / 2 - extents.y_bearing + 5);
     cairo_show_text (cr, label);
 
-    g_snprintf (label, sizeof(label), "%s: %.1f",
+    g_snprintf (label, sizeof(label), "%s: %.1f%%",
         priv->ylabel != NULL ? priv->ylabel : "", 100 * priv->y);
     cairo_text_extents (cr, label, &extents);
-    cairo_move_to (cr, priv->xc, priv->yc);
+    cairo_move_to (cr,
+                   (priv->x1 + priv->x3) / 2,
+                   (priv->y1 + priv->y3) / 2);
     cairo_rotate (cr, -M_PI/3);
-    cairo_rel_move_to (cr, -extents.width/2, -priv->radius/2 - (extents.height + extents.y_bearing) - 5);
+    cairo_rel_move_to (cr, -extents.width/2, -(extents.height + extents.y_bearing) - 5);
     cairo_show_text (cr, label);
     cairo_rotate (cr, M_PI/3);
 
-    g_snprintf (label, sizeof(label), "%s: %.1f",
+    g_snprintf (label, sizeof(label), "%s: %.1f%%",
         priv->zlabel != NULL ? priv->zlabel : "", 100 * priv->z);
     cairo_text_extents (cr, label, &extents);
-    cairo_move_to (cr, priv->xc , priv->yc);
+    cairo_move_to (cr,
+                   (priv->x1 + priv->x2) / 2,
+                   (priv->y1 + priv->y2) / 2);
     cairo_rotate (cr, M_PI/3);
-    cairo_rel_move_to (cr, -extents.width/2, -priv->radius/2 - (extents.height + extents.y_bearing) - 5);
+    cairo_rel_move_to (cr, -extents.width/2, extents.height + extents.y_bearing - 5);
     cairo_show_text (cr, label);
     cairo_rotate (cr, -M_PI/3);
+}
+
+static void draw_pointer (GtkWidget *plot, cairo_t *cr)
+{
+    gdouble px, py;
+    TernaryPlotPrivate *priv;
+
+    priv = TERNARY_PLOT_GET_PRIVATE (plot);
 
     /* altitudes */
     px = priv->x * priv->x1 + priv->y * priv->x2 + priv->z * priv->x3;
@@ -235,6 +254,7 @@ static void draw (GtkWidget *plot, cairo_t *cr)
 static void ternary_plot_size_allocate (GtkWidget *plot,
     GdkRectangle *allocation)
 {
+    double xc, yc;
     TernaryPlotPrivate *priv;
 
     priv = TERNARY_PLOT_GET_PRIVATE (plot);
@@ -243,16 +263,16 @@ static void ternary_plot_size_allocate (GtkWidget *plot,
     priv->radius = (MIN (allocation->width,
                          (allocation->height - 15) / sin (M_PI / 3)) - 5)*
                          sin (M_PI / 3) * 2 / 3;
-    priv->xc = allocation->x + allocation->width / 2;
-    priv->yc = allocation->y + (allocation->height - 15) * 2 / 3;
+    xc = allocation->x + allocation->width / 2;
+    yc = allocation->y + (allocation->height - 15) * 2 / 3;
 
     /* vertices */
-    priv->x1 = priv->xc + priv->radius * 0; /* cos (-M_PI/2) */
-    priv->y1 = priv->yc + priv->radius * -1; /* sin (-M_PI/2) */
-    priv->x2 = priv->xc + priv->radius * sqrt (3)/2; /* cos (-11*M_PI/6) */
-    priv->y2 = priv->yc + priv->radius * 0.5; /* sin (-11*M_PI/6) */
-    priv->x3 = priv->xc + priv->radius * -sqrt (3)/2; /* cos (-7*M_PI/6) */
-    priv->y3 = priv->yc + priv->radius * 0.5; /* sin (-7*M_PI/6) */
+    priv->x1 = xc + priv->radius * 0; /* cos (-M_PI/2) */
+    priv->y1 = yc + priv->radius * -1; /* sin (-M_PI/2) */
+    priv->x2 = xc + priv->radius * sqrt (3)/2; /* cos (-11*M_PI/6) */
+    priv->y2 = yc + priv->radius * 0.5; /* sin (-11*M_PI/6) */
+    priv->x3 = xc + priv->radius * -sqrt (3)/2; /* cos (-7*M_PI/6) */
+    priv->y3 = yc + priv->radius * 0.5; /* sin (-7*M_PI/6) */
 
     GTK_WIDGET_CLASS (ternary_plot_parent_class)->size_allocate (plot, allocation);
 }
@@ -274,7 +294,9 @@ static gboolean ternary_plot_expose (GtkWidget* plot, GdkEventExpose *event)
         event->area.width, event->area.height);
     cairo_clip (cr);
 
-    draw (plot, cr);
+    draw_field (plot, cr);
+    draw_labels (plot, cr);
+    draw_pointer (plot, cr);
 
     cairo_destroy (cr);
 
