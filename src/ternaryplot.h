@@ -43,6 +43,8 @@ struct _TernaryPlot
 {
     GtkDrawingArea parent;
 
+    gdouble  GSEAL(tol);    /* rounding tolerance in percents */
+
     /* private */
 };
 

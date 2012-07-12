@@ -24,6 +24,9 @@
 #include "ternaryplot.h"
 #include "ternaryplot-marshallers.h"
 
+#define GETTEXT_PACKAGE "ternaryplot"
+#include <glib/gi18n.h>
+
 #define SENSITIVITY_THRESH 5
 
 #define TERNARY_PLOT_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), \
@@ -37,12 +40,16 @@ struct _TernaryPlotPrivate
     gdouble radius; /* radius */
     gdouble x, y, z; /* x-,y-,z-values */
     gchar *xlabel, *ylabel, *zlabel; /* x-,y-,z-labels */
-    gdouble tol; /* rounding tolerance in percents */
     gdouble grid_step; /* grid step */
     gchar is_dragged; /* is pointer being dragged */
 };
 
 G_DEFINE_TYPE (TernaryPlot, ternary_plot, GTK_TYPE_DRAWING_AREA);
+
+enum {
+    PROP_0,
+    PROP_TOLERANCE
+};
 
 enum {
     POINT_CHANGED,
@@ -57,11 +64,15 @@ static gboolean ternary_plot_button_press (GtkWidget *plot, GdkEventButton *even
 static gboolean ternary_plot_button_release (GtkWidget *plot, GdkEventButton *event);
 static gboolean ternary_plot_motion_notify (GtkWidget *plot, GdkEventMotion *event);
 static void     ternary_plot_size_allocate (GtkWidget *widget, GdkRectangle *allocation);
+static void     ternary_plot_finalize (GObject *object);
 
-static void ternary_plot_finalize (GObject *object);
+static void     ternary_plot_set_property (GObject *object, guint prop_id,
+    const GValue *value, GParamSpec *pspec);
+static void      ternary_plot_get_property (GObject *object, guint prop_id,
+    GValue *value, GParamSpec *pspec);
 
 /* utility functions */
-static gdouble ternary_plot_dot_to_line_distance (gdouble x, gdouble y,
+static gdouble   ternary_plot_dot_to_line_distance (gdouble x, gdouble y,
     gdouble x1, gdouble y1, gdouble x2, gdouble y2);
 
 static void ternary_plot_class_init (TernaryPlotClass *class)
@@ -73,6 +84,15 @@ static void ternary_plot_class_init (TernaryPlotClass *class)
     widget_class = GTK_WIDGET_CLASS (class);
 
     obj_class->finalize = ternary_plot_finalize;
+    obj_class->set_property = ternary_plot_set_property;
+    obj_class->get_property = ternary_plot_get_property;
+
+    g_object_class_install_property (obj_class,
+        PROP_TOLERANCE,
+        g_param_spec_double ("tolerance",
+            _("Rounding tolerance in percents"),
+            _("Current value is rounded to value proportional to the tolerance"),
+            0.1, 100.0, 10.0, (G_PARAM_READABLE | G_PARAM_WRITABLE)));
 
     signals[POINT_CHANGED] =
         g_signal_new ("point-changed",
@@ -104,7 +124,7 @@ static void ternary_plot_init (TernaryPlot *plot)
     priv->y = 1./3;
     priv->z = 1./3;
 
-    priv->tol = 0.1; /* 10% */
+    plot->tol = 0.1;
     priv->grid_step = 0.1; /* 10% */
 
     priv->is_dragged = FALSE;
@@ -128,6 +148,38 @@ static void ternary_plot_finalize (GObject *object)
         g_free (priv->zlabel);
 
     G_OBJECT_CLASS (ternary_plot_parent_class)->finalize (object);
+}
+
+static void ternary_plot_get_property (GObject *object, guint prop_id,
+    GValue *value, GParamSpec *pspec)
+{
+    TernaryPlot *plot = TERNARY_PLOT (object);
+
+    switch (prop_id)
+    {
+    case PROP_TOLERANCE:
+        g_value_set_double (value, plot->tol);
+        break;
+    default:
+        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+        break;
+    }
+}
+
+static void ternary_plot_set_property (GObject *object, guint prop_id,
+    const GValue *value, GParamSpec *pspec)
+{
+    TernaryPlot *plot = TERNARY_PLOT (object);
+
+    switch (prop_id)
+    {
+    case PROP_TOLERANCE:
+        ternary_plot_set_tolerance (plot, g_value_get_double (value));
+        break;
+    default:
+        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+        break;
+    }
 }
 
 static void draw_field (GtkWidget *plot, cairo_t *cr)
@@ -360,19 +412,21 @@ static gboolean ternary_plot_motion_notify (GtkWidget *plot, GdkEventMotion *eve
     return FALSE;
 }
 
-static gboolean ternary_plot_button_release (GtkWidget *plot, GdkEventButton *event)
+static gboolean ternary_plot_button_release (GtkWidget *widget, GdkEventButton *event)
 {
+    TernaryPlot *plot;
     TernaryPlotPrivate *priv;
     gdouble round_err;
     gdouble new_x, new_y, new_z;
     gdouble tol;
 
+    plot = TERNARY_PLOT (widget);
     priv = TERNARY_PLOT_GET_PRIVATE (plot);
 
     if (event->button != 1 || !priv->is_dragged)
         return FALSE;
 
-    tol = priv->tol;
+    tol = plot->tol;
 
     new_x = roundf (priv->x / tol) * tol;
     new_y = roundf (priv->y / tol) * tol;
@@ -399,7 +453,7 @@ static gboolean ternary_plot_button_release (GtkWidget *plot, GdkEventButton *ev
     priv->y = new_y;
     priv->z = new_z;
 
-    gtk_widget_queue_draw (plot);
+    gtk_widget_queue_draw (widget);
 
     priv->is_dragged = FALSE;
 
@@ -460,10 +514,16 @@ void ternary_plot_set_point (TernaryPlot *plot, gdouble x, gdouble y, gdouble z)
 
 void ternary_plot_set_tolerance (TernaryPlot *plot, gdouble tol)
 {
+    gdouble tolerance;
     TernaryPlotPrivate *priv;
 
     priv = TERNARY_PLOT_GET_PRIVATE (plot);
-    priv->tol = CLAMP(tol, 0.1, 100.0) / 100.0;
+
+    tolerance = CLAMP(tol, 0.1, 100.0) / 100.0;
+    if (plot->tol != tolerance) {
+        plot->tol = tolerance;
+        g_object_notify (G_OBJECT (plot), "tolerance");
+    }
 }
 
 const gchar* ternary_plot_get_xlabel (TernaryPlot *plot)
@@ -505,10 +565,7 @@ void ternary_plot_get_point (TernaryPlot *plot, gdouble *x, gdouble *y, gdouble 
 
 gdouble ternary_plot_get_tolerance (TernaryPlot *plot)
 {
-    TernaryPlotPrivate *priv;
-
-    priv = TERNARY_PLOT_GET_PRIVATE (plot);
-    return priv->tol * 100.0;
+    return plot->tol * 100.0;
 }
 
 static gdouble ternary_plot_dot_to_line_distance (gdouble x, gdouble y,
