@@ -174,8 +174,8 @@ static void draw_field (GtkWidget *plot, cairo_t *cr)
     cairo_restore (cr); /* stack-pen-size */
 }
 
-static void draw_label (cairo_t *cr, const char *label, double x, double y,
-    double angle)
+static void draw_label (cairo_t *cr, const char *label, gdouble x, gdouble y,
+    gdouble angle)
 {
     cairo_text_extents_t extents;
 
@@ -254,7 +254,7 @@ static void draw_pointer (GtkWidget *plot, cairo_t *cr)
 static void ternary_plot_size_allocate (GtkWidget *plot,
     GdkRectangle *allocation)
 {
-    double xc, yc;
+    gdouble xc, yc;
     TernaryPlotPrivate *priv;
 
     priv = TERNARY_PLOT_GET_PRIVATE (plot);
@@ -490,7 +490,7 @@ const gchar* ternary_plot_get_zlabel (TernaryPlot *plot)
     return priv->zlabel;
 }
 
-void ternary_plot_get_point (TernaryPlot *plot, double *x, double *y, double *z)
+void ternary_plot_get_point (TernaryPlot *plot, gdouble *x, gdouble *y, gdouble *z)
 {
     TernaryPlotPrivate *priv;
 
