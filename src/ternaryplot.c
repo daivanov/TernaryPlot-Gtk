@@ -471,6 +471,7 @@ void ternary_plot_set_xlabel (TernaryPlot *plot, const gchar *xlabel)
 {
     TernaryPlotPrivate *priv;
 
+    g_return_if_fail (TERNARY_IS_PLOT (plot));
     priv = TERNARY_PLOT_GET_PRIVATE (plot);
 
     if (priv->xlabel != NULL)
@@ -482,6 +483,7 @@ void ternary_plot_set_ylabel (TernaryPlot *plot, const gchar *ylabel)
 {
     TernaryPlotPrivate *priv;
 
+    g_return_if_fail (TERNARY_IS_PLOT (plot));
     priv = TERNARY_PLOT_GET_PRIVATE (plot);
 
     if (priv->ylabel != NULL)
@@ -493,6 +495,7 @@ void ternary_plot_set_zlabel (TernaryPlot *plot, const gchar *zlabel)
 {
     TernaryPlotPrivate *priv;
 
+    g_return_if_fail (TERNARY_IS_PLOT (plot));
     priv = TERNARY_PLOT_GET_PRIVATE (plot);
 
     if (priv->zlabel != NULL)
@@ -504,6 +507,7 @@ void ternary_plot_set_point (TernaryPlot *plot, gdouble x, gdouble y, gdouble z)
 {
     TernaryPlotPrivate *priv;
 
+    g_return_if_fail (TERNARY_IS_PLOT (plot));
     priv = TERNARY_PLOT_GET_PRIVATE (plot);
     priv->x = fabs (x) / (fabs (x) + fabs (y) + fabs (z));
     priv->y = fabs (y) / (fabs (x) + fabs (y) + fabs (z));
@@ -517,6 +521,7 @@ void ternary_plot_set_tolerance (TernaryPlot *plot, gdouble tol)
     gdouble tolerance;
     TernaryPlotPrivate *priv;
 
+    g_return_if_fail (TERNARY_IS_PLOT (plot));
     priv = TERNARY_PLOT_GET_PRIVATE (plot);
 
     tolerance = CLAMP(tol, 0.1, 100.0) / 100.0;
@@ -530,6 +535,7 @@ const gchar* ternary_plot_get_xlabel (TernaryPlot *plot)
 {
     TernaryPlotPrivate *priv;
 
+    g_return_val_if_fail (TERNARY_IS_PLOT (plot), NULL);
     priv = TERNARY_PLOT_GET_PRIVATE (plot);
     return priv->xlabel;
 }
@@ -538,6 +544,7 @@ const gchar* ternary_plot_get_ylabel (TernaryPlot *plot)
 {
     TernaryPlotPrivate *priv;
 
+    g_return_val_if_fail (TERNARY_IS_PLOT (plot), NULL);
     priv = TERNARY_PLOT_GET_PRIVATE (plot);
     return priv->ylabel;
 }
@@ -546,6 +553,7 @@ const gchar* ternary_plot_get_zlabel (TernaryPlot *plot)
 {
     TernaryPlotPrivate *priv;
 
+    g_return_val_if_fail (TERNARY_IS_PLOT (plot), NULL);
     priv = TERNARY_PLOT_GET_PRIVATE (plot);
     return priv->zlabel;
 }
@@ -554,6 +562,7 @@ void ternary_plot_get_point (TernaryPlot *plot, gdouble *x, gdouble *y, gdouble 
 {
     TernaryPlotPrivate *priv;
 
+    g_return_if_fail (TERNARY_IS_PLOT (plot));
     priv = TERNARY_PLOT_GET_PRIVATE (plot);
     if (x)
         *x = priv->x;
@@ -565,6 +574,8 @@ void ternary_plot_get_point (TernaryPlot *plot, gdouble *x, gdouble *y, gdouble 
 
 gdouble ternary_plot_get_tolerance (TernaryPlot *plot)
 {
+    g_return_val_if_fail (TERNARY_IS_PLOT (plot), 0.0);
+
     return plot->tol * 100.0;
 }
 
