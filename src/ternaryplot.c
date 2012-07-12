@@ -42,6 +42,7 @@ struct _TernaryPlotPrivate
     gchar *xlabel, *ylabel, *zlabel; /* x-,y-,z-labels */
     gdouble grid_step; /* grid step */
     gchar is_dragged; /* is pointer being dragged */
+    gdouble percent_width; /* percent value label width */
 };
 
 G_DEFINE_TYPE (TernaryPlot, ternary_plot, GTK_TYPE_DRAWING_AREA);
@@ -120,9 +121,9 @@ static void ternary_plot_init (TernaryPlot *plot)
 
     priv = TERNARY_PLOT_GET_PRIVATE (plot);
 
-    priv->x = 1./3;
-    priv->y = 1./3;
-    priv->z = 1./3;
+    priv->x = 0.1;
+    priv->y = 0.3;
+    priv->z = 0.6;
 
     plot->tol = 0.1;
     priv->grid_step = 0.1; /* 10% */
@@ -226,25 +227,27 @@ static void draw_field (GtkWidget *plot, cairo_t *cr)
     cairo_restore (cr); /* stack-pen-size */
 }
 
-static void draw_label (cairo_t *cr, const char *label, gdouble x, gdouble y,
-    gdouble angle)
+static void draw_label (cairo_t *cr, const char *label, gdouble percent,
+    gdouble percent_witdh, gdouble x, gdouble y, gdouble angle)
 {
+    gchar percent_label[12]; /* : 100.0% */
     cairo_text_extents_t extents;
 
+    g_snprintf (percent_label, sizeof(percent_label), ": %.1f%%", percent);
     cairo_text_extents (cr, label, &extents);
     cairo_move_to (cr, x, y);
     cairo_rotate (cr, angle);
-    cairo_rel_move_to (cr, -extents.width/2,
+    cairo_rel_move_to (cr, (-extents.width - percent_witdh)/2,
                        angle == 0.0 ?
                        (extents.height + 2) :
                        (-extents.height - extents.y_bearing - 2));
     cairo_show_text (cr, label);
+    cairo_show_text (cr, percent_label);
     cairo_rotate (cr, -angle);
 }
 
 static void draw_labels (GtkWidget *plot, cairo_t *cr)
 {
-    gchar label[100];
     TernaryPlotPrivate *priv;
 
     priv = TERNARY_PLOT_GET_PRIVATE (plot);
@@ -253,19 +256,17 @@ static void draw_labels (GtkWidget *plot, cairo_t *cr)
     cairo_set_font_size (cr, 12);
     cairo_select_font_face (cr, "Nimbus Sans L", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
 
-    g_snprintf (label, sizeof(label), "%s: %.1f%%",
-        priv->xlabel != NULL ? priv->xlabel : "", 100 * priv->x);
-    draw_label (cr, label,
+    if (priv->percent_width == 0.0) {
+        cairo_text_extents_t extents;
+        cairo_text_extents (cr, ": 100.0%", &extents);
+        priv->percent_width = extents.width;
+    }
+
+    draw_label (cr, priv->xlabel, 100 * priv->x, priv->percent_width,
                 (priv->x2 + priv->x3) / 2, (priv->y2 + priv->y3) / 2, 0.0);
-
-    g_snprintf (label, sizeof(label), "%s: %.1f%%",
-        priv->ylabel != NULL ? priv->ylabel : "", 100 * priv->y);
-    draw_label (cr, label,
+    draw_label (cr, priv->ylabel, 100 * priv->y, priv->percent_width,
                 (priv->x1 + priv->x3) / 2, (priv->y1 + priv->y3) / 2, -M_PI / 3);
-
-    g_snprintf (label, sizeof(label), "%s: %.1f%%",
-        priv->zlabel != NULL ? priv->zlabel : "", 100 * priv->z);
-    draw_label (cr, label,
+    draw_label (cr, priv->zlabel, 100 * priv->z, priv->percent_width,
                 (priv->x1 + priv->x2) / 2, (priv->y1 + priv->y2) / 2, M_PI / 3);
 }
 
@@ -347,8 +348,8 @@ static gboolean ternary_plot_expose (GtkWidget* plot, GdkEventExpose *event)
     cairo_clip (cr);
 
     draw_field (plot, cr);
-    draw_labels (plot, cr);
     draw_pointer (plot, cr);
+    draw_labels (plot, cr);
 
     cairo_destroy (cr);
 
