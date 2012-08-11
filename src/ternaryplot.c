@@ -333,10 +333,6 @@ static void ternary_plot_size_allocate (GtkWidget *plot,
 static gboolean ternary_plot_expose (GtkWidget* plot, GdkEventExpose *event)
 {
     cairo_t *cr;
-    TernaryPlotPrivate *priv;
-
-    /* update private data */
-    priv = TERNARY_PLOT_GET_PRIVATE (plot);
 
     /* get a cairo_t */
     cr = gdk_cairo_create (plot->window);
@@ -520,10 +516,8 @@ void ternary_plot_set_point (TernaryPlot *plot, gdouble x, gdouble y, gdouble z)
 void ternary_plot_set_tolerance (TernaryPlot *plot, gdouble tol)
 {
     gdouble tolerance;
-    TernaryPlotPrivate *priv;
 
     g_return_if_fail (TERNARY_IS_PLOT (plot));
-    priv = TERNARY_PLOT_GET_PRIVATE (plot);
 
     tolerance = CLAMP(tol, 0.1, 100.0) / 100.0;
     if (plot->tol != tolerance) {

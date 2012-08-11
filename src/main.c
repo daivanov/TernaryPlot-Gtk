@@ -22,20 +22,15 @@
 
 #include "ternaryplot.h"
 
+#define UNUSED(x) (void)(x)
+
 void destroyed_cb (GtkWidget *widget, gpointer data)
 {
+    UNUSED(widget);
+    UNUSED(data);
+
     /* quit GTK application */
     gtk_main_quit ();
-}
-
-void point_changed_cb (TernaryPlot *plot, gdouble x, gdouble y, gdouble z,
-    gpointer data)
-{
-    gdouble new_x = x, new_y = y, new_z = z;
-    if (!validator (&new_x, &new_y, &new_z))
-    {
-        ternary_plot_set_point (plot, new_x, new_y, new_z);
-    }
 }
 
 gboolean validator (gdouble *x, gdouble *y, gdouble *z)
@@ -82,6 +77,18 @@ gboolean validator (gdouble *x, gdouble *y, gdouble *z)
         return FALSE;
     }
     return TRUE;
+}
+
+void point_changed_cb (TernaryPlot *plot, gdouble x, gdouble y, gdouble z,
+    gpointer data)
+{
+    UNUSED(data);
+
+    gdouble new_x = x, new_y = y, new_z = z;
+    if (!validator (&new_x, &new_y, &new_z))
+    {
+        ternary_plot_set_point (plot, new_x, new_y, new_z);
+    }
 }
 
 int main (int argc,char *argv[])

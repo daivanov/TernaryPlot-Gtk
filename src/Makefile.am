@@ -3,6 +3,8 @@ bin_PROGRAMS = ternaryplot
 ternaryplot_LDADD = @DEPS_LIBS@
 INCLUDES = @DEPS_CFLAGS@
 
+AM_CFLAGS = -Wall -Wextra
+
 ternaryplot_SOURCES = \
     main.c \
     ternaryplot.h ternaryplot.c
@@ -23,3 +25,4 @@ ternaryplot-marshallers.h: ternaryplot-marshallers.list
 	@GLIB_GENMARSHAL@ --header --prefix=ternaryplot_marshal $< > $@
 
 CLEANFILES = $(BUILT_SOURCES)
+

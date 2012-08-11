@@ -59,6 +59,7 @@ struct _TernaryPlotClass
                            gdouble z);
 };
 
+GType ternary_plot_get_type (void);
 GtkWidget * ternary_plot_new (void);
 void ternary_plot_set_xlabel (TernaryPlot *plot, const gchar *xlabel);
 void ternary_plot_set_ylabel (TernaryPlot *plot, const gchar *ylabel);

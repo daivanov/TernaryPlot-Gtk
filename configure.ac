@@ -3,7 +3,7 @@ AC_INIT(ternaryplot, 0.1, daniil.ivanov@gmail.com)
 AC_CONFIG_SRCDIR([src/main.c])
 
 # Checks for programs.
-AC_PROG_CC
+AC_PROG_CC_C99
 
 # Checks for libraries.
 PKG_CHECK_MODULES(DEPS, gtk+-2.0 >= 2.8 glib-2.0 >= 2.8 cairo >= 1.0)
